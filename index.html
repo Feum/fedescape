@@ -49,8 +49,10 @@ BlueFrames[0].src = "./assets/blueprint.png";
 CfuFrames[0] = new Image();
 CfuFrames[0].src = "./assets/cfu.gif";
 
-if (window.localStorage.getItem('messages') == null) 
+if (window.localStorage.getItem('messages') == null) {
+    alert("Benvenuta in Fedescape! In questo minigioco ti muovi con le frecce direzionali. Devi fuggire da Fede e dagli esami che piovono dal cielo, collezionando tutti i blueprint del LeleFrame. Appena premi OK parte il gioco, quindi preparati! Colleziona tutti i messaggi di sconfitta e completa il gioco in meno di 20s per il finale segreto!")
     window.localStorage.setItem('messages',JSON.stringify({'unlocked':0, 'achievements':0}));
+}
 if (window.localStorage.getItem('record') == null)
     window.localStorage.setItem('record','-');
 
@@ -281,6 +283,7 @@ function updateGameArea() {
             }
             window.localStorage.setItem('messages',JSON.stringify(messages));
             myGameArea.stop(text)
+            if (achievements === 3) alert("Se mai leggerai questo messaggio, vuol dire che hai sbloccato il finale segreto. Ho fatto questo delirio solo per te. Il mio amore è puro, veramente. Dammi questa opportunità e ti stupirò con mille stronzate. Promesso.")
         }
 
         for (i = 0; i < exams.length; i += 1) {
