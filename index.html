@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>
+canvas {
+    border:1px solid #d3d3d3;
+    background-color: #f1f1f1;
+}
+
+body {
+  background-image: url('./assets/bg.jpg');
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
+}
+
+</style>
+</head>
+<body onload="startGame()">
+<div id="Lista"style="background-color:rgba(255,255,255,0.8); text-align:left;width:480px;"></div>
+<div id="score" style="background-color:rgba(255,255,255,0.8); padding:30px; position:absolute; top: 10px; left: 500px;"></div>
+<div id="result" style="background-color:rgba(255,255,255,0.8); opacity:0; padding:30px; position:absolute; top: 300px; left: 500px; width:50vw"></div>
+<script>
+
+var myGamePiece;
+var myObstacle;
+var FedeFrames = [];
+var LeleFrames = [];
+var BlueFrames = [];
+var CfuFrames = [];
+
+var blueprints = [];
+var exams = [];
+
+
+
+for (var i = 0; i < 6; i++) {
+  FedeFrames[i] = new Image();
+  FedeFrames[i].src = "./assets/fede/Fede-"+i+".gif";
+}
+for (var i = 0; i < 8; i++) {
+  LeleFrames[i] = new Image();
+  LeleFrames[i].src = "./assets/lele/Lele-"+i+".gif";
+}
+
+BlueFrames[0] = new Image();
+BlueFrames[0].src = "./assets/blueprint.png";
+CfuFrames[0] = new Image();
+CfuFrames[0].src = "./assets/cfu.gif";
+
+if (window.localStorage.getItem('messages') == null) 
+    window.localStorage.setItem('messages',JSON.stringify({'unlocked':0, 'achievements':0}));
+if (window.localStorage.getItem('record') == null)
+    window.localStorage.setItem('record','-');
+
+var unlockeds = JSON.parse(window.localStorage.getItem('messages'))['unlocked'];
+var achievements = JSON.parse(window.localStorage.getItem('messages'))['achievements'];
+var record = window.localStorage.getItem('record');
+
+
+function drawAnimatedImage(arr,x,y,angle,factor,changespeed) {
+    if (!factor) {
+        factor = 1;
+    }
+    if (!changespeed) {
+        changespeed = 1;
+    }
+    var ctx = myGameArea.context;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);//anngle * Math.PI / 180);
+    if (!!arr[Math.round(Date.now()/changespeed) % arr.length]) {
+    ctx.drawImage(arr[Math.round(Date.now()/changespeed) % arr.length], -(arr[Math.round(Date.now()/changespeed) % arr.length].width * factor / 2), -(arr[Math.round(Date.now()/changespeed) % arr.length].height * factor / 2), arr[Math.round(Date.now()/changespeed) % arr.length].width * factor, arr[Math.round(Date.now()/changespeed) % arr.length].height * factor);
+    }
+    ctx.restore();
+}
+
+function randCoor(XorY) {
+    if (XorY === 'x')
+    {
+        return Math.floor(Math.random()*(myGameArea.canvas.width - 20));
+    } else {
+        return Math.floor(Math.random()*(myGameArea.canvas.height- 20));
+    }
+}
+
+function startGame() {
+    myGamePiece = new component(10, 10, "red", 10, 120);
+    myObstacle  = new component(25, 25, "green", 300, 120);
+    blueprints.push({'component':new component(25,30,"blue",randCoor('x'),randCoor('y')),'message':'<b>Itanglish</b>: La componente fondamentale di Lele è nelle tue mani! Vai così!'}); 
+    blueprints.push({'component':new component(25,30,"blue",randCoor('x'),randCoor('y')),'message':'<b>Chicca</b>: La padrona di Lele è stata recuperata. Ti fissa. Ti Giudica.'}); 
+    blueprints.push({'component':new component(25,30,"blue",randCoor('x'),randCoor('y')),'message':'<b>700 Ore</b>: Senza questa componente saresti una Lele con troppo tempo.'}); 
+    blueprints.push({'component':new component(25,30,"blue",randCoor('x'),randCoor('y')),'message':'<b>Chat Lag</b>: Complimenti! Adesso rispondi alle chat solo ogni 4 giorni!'}); 
+    blueprints.push({'component':new component(25,30,"blue",randCoor('x'),randCoor('y')),'message':'<b>Autocompletamento</b>: Ora completi le frasi degli altri! Ottima feature!'}); 
+    blueprints.push({'component':new component(25,30,"blue",randCoor('x'),randCoor('y')),'message':'<b>Narcolessia</b>: Hai sbloccato la capacità di sprecare il tempo dormendo!'});
+    blueprints.push({'component':new component(25,30,"blue",randCoor('x'),randCoor('y')),'message':'<b>Spillone</b>: Un unico spillone per domarli e nella crocchia incatenarli.'});
+    blueprints.push({'component':new component(25,30,"blue",randCoor('x'),randCoor('y')),'message':'<b>Autostima Drop</b>: Adesso ti fai schifo! Somigli sempre di più a Lele!'});
+    blueprints.push({'component':new component(25,30,"blue",randCoor('x'),randCoor('y')),'message':'<b>Tolkien</b>: L\'autore più sopravvalutato del novecento è nella tua vita!'});
+    blueprints.push({'component':new component(25,30,"blue",randCoor('x'),randCoor('y')),'message':'<b>Necromanzia</b>: Adesso sei completa... ciò che davvero ti mancava è qui.'});
+    
+
+    
+
+    myGameArea.start();
+}
+
+var myGameArea = {
+    canvas : document.createElement("canvas"),
+    start : function() {
+        this.canvas.width = 480;
+        this.canvas.height = 270;
+        this.context = this.canvas.getContext("2d");
+        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+        this.interval = setInterval(updateGameArea, 20);
+        this.frameNo = 0;
+    },
+    clear : function() {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    },
+    stop : function(message) {
+        clearInterval(this.interval);
+        document.getElementById('result').style.opacity = '1';
+        document.getElementById('result').innerHTML+='<h1>'+message+'</h1><br><button id="rigioca" onclick="window.location.reload();">Rigioca</button> clicca o premi invio'
+        document.getElementById("rigioca").focus();
+    }
+}
+
+function component(width, height, color, x, y) {
+    this.width = width;
+    this.height = height;
+    this.color = color;
+    this.speedX = 0;
+    this.speedY = 0;    
+    this.x = x;
+    this.y = y;    
+    this.update = function() {
+        ctx = myGameArea.context;
+        if (color.startsWith('visible')) {
+            cfu = color.split(/-/)[1];
+            ctx.fillStyle = cfu === '3'? 'lightblue' : (cfu === '6' ? 'lightgreen' : (cfu === '9' ? '#FFAAAA' : '#FFAAFF'));
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+            ctx.lineWidth = 4;
+            ctx.fillStyle = "#000000";
+            ctx.font="15px Georgia";
+            ctx.textAlign="start"; 
+            ctx.textBaseline = "start";
+            ctx.fillText(cfu + ' CFU',18+this.x,this.y+(this.height/2)+5);
+        }
+
+    }
+    this.crashWith = function(otherobj) {
+        var myleft = this.x;
+        var myright = this.x + (this.width);
+        var mytop = this.y;
+        var mybottom = this.y + (this.height);
+        var otherleft = otherobj.x;
+        var otherright = otherobj.x + (otherobj.width);
+        var othertop = otherobj.y;
+        var otherbottom = otherobj.y + (otherobj.height);
+        var crash = true;
+        if ((mybottom < othertop) || (mytop > otherbottom) || (myright < otherleft) || (myleft > otherright)) {
+            crash = false;
+        }
+        return crash;
+    }
+}
+
+
+var activeBlueprint = 0;
+var allCFUs = [3,6,9,12,24];
+var fedeLoseArr = [
+    "Oh no! Fede ti ha palpeggiato! Hai perso!",
+    "Aiuto! Fede sta mettendo le mani nei tuoi capelli! Hai perso!",
+    "Help! Fede ti ha sobillato di messaggi! Hai perso!",
+    "Noooo! Fede ti ha scritto una poesia maledetta! Hai perso!",
+    "Tragedia! Fede ha cancellato i tuoi dati di Warframe! Hai perso!",
+    "Sventura! Fede ti ha messo in imbarazzo con una serenata! Hai perso!",
+    "Shit! Fede ti ha molested! Oh my dio!",
+    "Orrore! Fede ha demolito lo stile di disegno di Araki! Hai perso!",
+    "Depressione! Fede ti ha rubato la Sertralina! Hai perso!",
+    "Sgomento! Fede ha messo le mani sui gattini neri! Hai perso!"];
+var CFU3LoseArr = [
+    "Hai bocciato l'idoneità di inglese! Ricorda: non è l'idoneità di Itanglish! Hai perso!",
+    "Complimenti sei la prima nella storia ad essere stata bocciata alla vecchia tesi triennale! Hai perso!",
+    "Hai completato il compitino giusto in tempo! No, aspetta... c'era tutta la pagina dietro. Hai perso!",
+    "Hai preso quindici ad un esame da 6 crediti... quindi hai guadagnato 3 crediti. No? Ok, no. Hai perso!"];
+var CFU6LoseArr = [
+    "Hai fatto fallire il ristorante dell'esempio del ristorante di Ingegneria del Software! Hai perso!",
+    "Sei stata uccisa sul colpo da una pessima battuta del Micheli! Hai perso!",
+    "Il romani ti ha posto una domanda in antico aramaico! Hai perso!",
+    "Hai messo il telefono sul banco. L'ira del Degano si è abbattuta su di te. Hai perso!",
+    "Sei stata trasformata in un rospo da una fattura algebrica della Del Corso. Hai Perso!",
+    "Hai passato fisica... ma non hai più voglia di vivere ora. Hai perso!",
+    "La comunità scientifica ha scoperto che hai scelto Green Computing: la tua carriera è rovinata. Hai perso!",
+    "Sei entrata in un coma profondo durante una lezione di Basi di Dati. Hai perso!",
+    "Alice e Bob di Crittografia stavano per massacrarti di botte... ti ha salvato la Bernasconi, ma hai perso!",
+    "Hai cercato per tutta la notte l'ombra di un'emozione nel corradini, ma sei stata illogica. Hai perso!",
+    "Sei pentita del tempo dedicato a Programmazione di Interfacce. Hai perso!",
+    "Hai calcolato con successo la probabilità di superare Probabilità e Statistica: 0%. Hai perso!"];
+var CFU9LoseArr = ["Hai fatto una cazzatona ad Architetture. Non ce la puoi fare. Hai perso!",
+                   "Un Allip generato dallo spettro del Vanneschi ti porta alla follia. Hai perso!",
+                   "Giangi ti ha imprigionata in una chiusura funzionale. Starai nello Stack per sempre. Hai perso!",
+                   "Hai appena derivato dal tuo punteggio che il tuo fallimento ad analisi è integrale. Hai perso!",
+                   "Hai violato l'invariante di un While. Sei stata fulminata da 3 prof diversi. Hai perso!"];
+var CFU12LoseArr = ["Hai detto: 'La Fisica è meglio della Sicurezza Informatica' davanti al Bonuccelli. Hai perso!",
+                    "Qualcuno ha creato un Interpete O'CaML senziente che ha preso vita e ti ha ucciso. Hai perso!",
+                    "L'eterogeneità degli argomenti di MDAL ti ha stuprato la mente. Hai perso!",
+                    "Sei stata bocciata a Reti perché non hai orientamento per il routing. Hai perso!",
+                    "Sei stata impagliata: ovvero sei diventata la Pagli. Hai perso."];
+
+function totalMessN () {
+    return fedeLoseArr.length + CFU12LoseArr.length + CFU6LoseArr.length + CFU9LoseArr.length + CFU3LoseArr.length;
+}
+
+function fedeLose() {
+    var idx = Math.floor(Math.random()*fedeLoseArr.length);
+    messages = JSON.parse(window.localStorage.getItem('messages'));
+    if (!messages['fede-'+idx]) {
+        messages['unlocked']++;
+        messages['fede-'+idx] = true;
+    }
+    window.localStorage.setItem('messages',JSON.stringify(messages));
+    return fedeLoseArr[idx];
+}
+
+function examLose(cfu) {
+
+    var arr;
+    switch (cfu) {
+        case '3': arr = CFU3LoseArr; break;
+        case '6': arr = CFU6LoseArr; break;
+        case '9': arr = CFU9LoseArr; break;
+        case '12': arr = CFU12LoseArr; break;
+    }
+    var idx = Math.floor(Math.random()*arr.length);
+    messages = JSON.parse(window.localStorage.getItem('messages'));
+    if (!messages[cfu+'-'+idx]) {
+        messages['unlocked']++;
+        messages[cfu+'-'+idx] = true;
+    }
+    window.localStorage.setItem('messages',JSON.stringify(messages));
+    return arr[idx];
+
+}
+
+var score = document.getElementById('score');
+var baseScoreText =  'Record: ' + (record === '-' ? '-' : record/50 + 's') + '<br> Unlocked Lose Messages: ' + unlockeds +'/' + totalMessN() + '<br> Unlocked Endings: ' + achievements + '/3';
+function updateGameArea() {
+    if (myGamePiece.crashWith(myObstacle)) {
+        myGameArea.stop(fedeLose());
+    } else {
+        score.innerHTML= baseScoreText+'<br>Current time: ' + (myGameArea.frameNo/50) +'s';
+        if ((blueprints[activeBlueprint]) && myGamePiece.crashWith(blueprints[activeBlueprint].component)) {
+                document.getElementById("Lista").innerHTML+=blueprints[activeBlueprint].message +'<br>';
+                activeBlueprint++;
+                mySpeed*=1.2;
+                enemySpeed*=0.833;
+                examFrequency+=10;
+            }
+        if (activeBlueprint === blueprints.length) {
+            var achievements = myGameArea.frameNo > 1250 ? 1 : (myGameArea.frameNo > 1000 ? 2 : 3);
+            myRecord = window.localStorage.getItem('record');
+            var text ="Awesome! Hai farmato Lele al 100%";
+            var textAppendix;
+            switch (achievements) {
+                case 3: textAppendix = ", Fede è morto di solitudine e l'arcangelo Gabriele ti attende!"; break;
+                case 2: textAppendix = " e Fede è morto di solitudine!"; break;
+                case 1: textAppendix = "!"; break; 
+            };
+            text += textAppendix;
+            if (myRecord === '-' || myGameArea.frameNo < myRecord) {
+                text+='<br> Nuovo Record: ' + (myGameArea.frameNo / 50) + 's !!!';
+                window.localStorage.setItem('record',myGameArea.frameNo);
+            } 
+
+            messages = JSON.parse(window.localStorage.getItem('messages'));
+            if (!messages['Win-'+achievements]) {
+                messages['achievements']++;
+                messages['Win-'+achievements] = true;
+            }
+            window.localStorage.setItem('messages',JSON.stringify(messages));
+            myGameArea.stop(text)
+        }
+
+        for (i = 0; i < exams.length; i += 1) {
+                if (myGamePiece.crashWith(exams[i])) {
+                    myGameArea.stop(examLose(exams[i].color.split(/-/)[1]));
+                    return;
+                } 
+         } 
+    
+        myGameArea.clear();
+        myGameArea.frameNo += 1;
+        myObstacle.update();
+        myGamePiece.x += myGamePiece.speedX;
+        myGamePiece.y += myGamePiece.speedY; 
+        if (myGamePiece.x > myGameArea.canvas.width) myGamePiece.x = 0; 
+        if (myGamePiece.x < 0 ) myGamePiece.x = myGameArea.canvas.width; 
+        if (myGamePiece.y > myGameArea.canvas.height) myGamePiece.y = 0; 
+        if (myGamePiece.y < 0 ) myGamePiece.y = myGameArea.canvas.height; 
+        myObstacle.speedX = (myGamePiece.x - myObstacle.x)/enemySpeed;
+        myObstacle.speedY = (myGamePiece.y - myObstacle.y)/enemySpeed; 
+        myObstacle.x +=  myObstacle.speedX;
+        myObstacle.y +=  myObstacle.speedY;
+        for (i = 0; i < exams.length; i += 1) {
+            exams[i].x += exams[i].speedX
+            exams[i].y += exams[i].speedY
+            exams[i].update();
+            this.drawAnimatedImage(CfuFrames,exams[i].x + 6,exams[i].y+10,0,1,100);
+        }
+        if (myGameArea.frameNo == 1 || everyinterval(150 -examFrequency)) {
+            var cfu = allCFUs[Math.floor(Math.random()*4)];
+            var size = 30 + ((cfu - 3)/3)*10;
+            exam = new component(size*2+12, 20, "visible-"+cfu, randCoor('x'), -20);
+            exam.speedX = 0
+            exam.speedY = Math.floor(Math.random()*3) + 1;
+
+            exams.push(exam);
+        }
+
+        if (blueprints[activeBlueprint]) blueprints[activeBlueprint].component.update();
+        myGamePiece.update();
+        this.drawAnimatedImage(LeleFrames,myGamePiece.x+6,myGamePiece.y+6,Math.atan2(myGamePiece.speedX,-myGamePiece.speedY),1,100);
+        this.drawAnimatedImage(FedeFrames,myObstacle.x+12,myObstacle.y+12,Math.atan2(myObstacle.speedX,-myObstacle.speedY),1,100);
+        if (blueprints[activeBlueprint]) this.drawAnimatedImage(BlueFrames,blueprints[activeBlueprint].component.x+12,blueprints[activeBlueprint].component.y+16,0,1,1000);
+    }
+}
+
+function everyinterval(n) {
+    if ((myGameArea.frameNo / n) % 1 == 0) {return true;}
+    return false;
+}
+var mySpeed = 2;
+var enemySpeed = 40;
+var examFrequency = 0
+function moveup() {
+    myGamePiece.speedY = -mySpeed; 
+    myGamePiece.speedX = 0; 
+}
+
+function movedown() {
+    myGamePiece.speedY = mySpeed; 
+    myGamePiece.speedX = 0; 
+}
+
+function moveleft() {
+    myGamePiece.speedY = 0; 
+    myGamePiece.speedX = -mySpeed; 
+}
+function moveright() {
+    myGamePiece.speedY = 0; 
+    myGamePiece.speedX = mySpeed; 
+}
+
+function clearmove() {
+    myGamePiece.speedX = 0; 
+    myGamePiece.speedY = 0; 
+}
+document.onkeydown = checkKey;
+
+function checkKey(e) {
+
+    e = e || window.event;
+
+    if (e.keyCode == '38') {
+        moveup();
+    }
+    else if (e.keyCode == '40') {
+        movedown();
+    }
+    else if (e.keyCode == '37') {
+        moveleft();
+    }
+    else if (e.keyCode == '39') {
+        moveright();
+    }
+
+}
+
+</script>
+
+
+
+</body>
+</html>
+
